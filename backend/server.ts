@@ -2,7 +2,6 @@ import express, { Application, Response, Request, NextFunction } from "express";
 import { WebSocketServer } from "ws";
 import { randomUUID } from "crypto";
 import global from "./types/custom";
-import { stringify } from "querystring";
 
 const PORT = 3000;
 const app: Application = express();
