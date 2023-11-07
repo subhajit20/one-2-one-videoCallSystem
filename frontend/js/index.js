@@ -6,11 +6,38 @@ const message = document.getElementById("message");
 const personId = document.getElementById("id");
 const sendBtn = document.getElementById("sendBtn");
 const chat = document.getElementById("chat");
+const ring = document.getElementById("ring");
 
-ws.onmessage = (message) => {
-    console.log(JSON.parse(message.data));
-    conn.innerHTML = JSON.parse(message.data).id;
-    chat.innerHTML = JSON.parse(message.data).message;
+let offer;
+let answer;
+let localStream;
+let peerConnection;
+
+ws.onmessage = async(message) => {
+    if (JSON.parse(message.data).sdpOffer) {
+        const sdpOffer = JSON.parse(message.data).sdpOffer;
+        if (sdpOffer.type === 'offer') {
+            offer = sdpOffer
+            console.log(sdpOffer)
+            ring.innerHTML += `<div style="font-size:2rem;color:red" role="alert">
+                Someone calling you...
+                </div>`
+        }
+    } else if (JSON.parse(message.data).sdpAnswer) {
+        answer = JSON.parse(message.data).sdpAnswer
+        console.log(answer)
+        ring.innerHTML += `<div style="font-size:2rem;color:red" role="alert">
+                Accepted the call...
+                </div>`;
+
+        const remoteDesc = new RTCSessionDescription(answer);
+        await peerConnection.setRemoteDescription(remoteDesc);
+    } else {
+        console.log(JSON.parse(message.data));
+        conn.innerHTML = JSON.parse(message.data).id;
+        chat.innerHTML = JSON.parse(message.data).message;
+
+    }
 }
 
 sendButton.addEventListener('click', (e) => {
@@ -34,20 +61,20 @@ const camOn = document.getElementById("camOn");
 const camOff = document.getElementById("camOff");
 
 const placeCall = document.getElementById("placeCall");
+const receiveCall = document.getElementById("receiveCall");
 
 let conf = {
     video: true,
     audio: true
 }
 
-let localStream;
 
+const iceServers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+];
+const configuration = { iceServers };
 
-const initCall = () => {
-    const iceServers = [
-        { urls: 'stun:stun.l.google.com:19302' },
-    ];
-    const configuration = { iceServers };
+const createPeer = () => {
     let peerConnection = new RTCPeerConnection(configuration);
 
     localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
@@ -55,6 +82,7 @@ const initCall = () => {
     peerConnection.ontrack = (event) => {
         remoteVideo.srcObject = event.streams[0];
     };
+
 
     return peerConnection;
 }
@@ -72,8 +100,6 @@ camOn.addEventListener('click', async(e) => {
     }
 })
 
-
-
 camOff.addEventListener('click', async(e) => {
     try {
         localStream.getTracks().forEach((track) => {
@@ -89,25 +115,37 @@ camOff.addEventListener('click', async(e) => {
 })
 
 placeCall.addEventListener('click', async(e) => {
-    const peer = initCall();
-    console.log(peer)
+    try {
+        peerConnection = createPeer();
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer)
+        const sdpOffer = peerConnection.localDescription;
 
-    peer.createOffer()
-        .then(offer => {
-            // Set the local description to the offer
-            return peer.setLocalDescription(offer);
-        })
-        .then(() => {
-            // The SDP offer is now in the localDescription property
-            const sdpOffer = peer.localDescription;
-            console.log(sdpOffer);
-            // Send the SDP offer to the remote peer via WebSocket
-            ws.send(JSON.stringify({
-                id: personId.value,
-                sdpOffer
-            }));
-        })
-        .catch(error => {
-            console.error('Error creating SDP offer:', error);
-        });
+        ws.send(JSON.stringify({
+            id: personId.value,
+            sdpOffer
+        }));
+    } catch (e) {
+        console.log(e)
+    }
 })
+
+receiveCall.addEventListener('click', async(e) => {
+    try {
+        peerConnection = createPeer();
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+
+        ws.send(JSON.stringify({
+            id: personId.value,
+            answer
+        }));
+    } catch (e) {
+        console.log(e)
+    }
+})
+
+if (peerConnection) {
+    console.log(peerConnection)
+}

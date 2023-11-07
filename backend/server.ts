@@ -1,6 +1,7 @@
 import express, { Application, Response, Request, NextFunction } from "express";
 import { WebSocketServer } from "ws";
 import { randomUUID } from "crypto";
+import getConnectedNodeWs from "./controller/User.controller";
 import global from "./types/custom";
 
 const PORT = 3000;
@@ -39,12 +40,38 @@ wss.on("connection", (ws: WsNode, req) => {
   ws.on("message", (data) => {
     console.log(JSON.parse(data));
     const nodeId = JSON.parse(data).id;
-
-    for (let individualNode of allNodes) {
-      if (individualNode.id === nodeId) {
-        individualNode.send(
+    const inComingData = JSON.parse(data);
+    // for incoming message from the user
+    if (inComingData.message) {
+      const node = getConnectedNodeWs(nodeId, allNodes);
+      if (node?.id) {
+        node.send(
           JSON.stringify({
             message: JSON.parse(data).message,
+          })
+        );
+      }
+    } else if (inComingData.sdpOffer) {
+      // for sending offer to the remote user
+      console.log(JSON.parse(data).sdpOffer);
+      const node = getConnectedNodeWs(nodeId, allNodes);
+
+      if (node?.id) {
+        let offer = JSON.parse(data).sdpOffer;
+        node.send(
+          JSON.stringify({
+            sdpOffer: offer,
+          })
+        );
+      }
+    } else if (inComingData.answer) {
+      const node = getConnectedNodeWs(nodeId, allNodes);
+      if (node?.id) {
+        let answer = inComingData.answer;
+
+        node.send(
+          JSON.stringify({
+            sdpAnswer: answer,
           })
         );
       }

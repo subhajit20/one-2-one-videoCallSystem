@@ -5,18 +5,23 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>webRTC</title>
 </head>
 
 <body>
     <h1>WebRTC</h1>
-    <video src="" id="localVideo" hidden autoplay playsinline></video>
+    <!--  Ring message -->
+    <p id="ring">
+
+    </p>
+
+    <!--  Buttons -->
     <h1>
         <button id="camOn">Camera On</button>
         <button id="placeCall">Call</button>
+        <button id="receiveCall">Receive Call</button>
     </h1>
     <button id="camOff">Camera Off</button>
-    <video src="" id="remoteVideo"></video>
     <h4>Your Id - <span id="connection"></span></h1>
         <button id="sendButton">Send Message to Server</button>
 
@@ -27,6 +32,11 @@
 
         <h1>Chats</h1>
         <p id="chat"></p>
+
+        <!-- Camera -->
+        <video src="" id="localVideo" class="object-fit-cover" hidden autoplay playsinline></video>
+        <video src="" id="remoteVideo" class="object-fit-cover" hidden autoplay playsinline></video>
+
 
         <script src="./js/index.js"></script>
 </body>
