@@ -13,25 +13,43 @@ let answer;
 let localStream;
 let peerConnection;
 
+const iceServers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+];
+const configuration = { iceServers };
+peerConnection = new RTCPeerConnection(configuration);
+
 ws.onmessage = async(message) => {
-    if (JSON.parse(message.data).sdpOffer) {
+    const incommingData = JSON.parse(message.data);
+    if (incommingData.sdpOffer) {
         const sdpOffer = JSON.parse(message.data).sdpOffer;
         if (sdpOffer.type === 'offer') {
             offer = sdpOffer
             console.log(sdpOffer)
             ring.innerHTML += `<div style="font-size:2rem;color:red" role="alert">
-                Someone calling you...
-                </div>`
+            Someone calling you...
+            </div>`
         }
-    } else if (JSON.parse(message.data).sdpAnswer) {
+    } else if (incommingData.sdpAnswer) {
         answer = JSON.parse(message.data).sdpAnswer
         console.log(answer)
         ring.innerHTML += `<div style="font-size:2rem;color:red" role="alert">
-                Accepted the call...
-                </div>`;
+        Accepted the call...
+        </div>`;
 
         const remoteDesc = new RTCSessionDescription(answer);
-        await peerConnection.setRemoteDescription(remoteDesc);
+        try {
+            await peerConnection.setRemoteDescription(remoteDesc);
+        } catch (e) {
+            console.log(e)
+        }
+    } else if (incommingData.iceCandidate) {
+        try {
+            console.log(incommingData);
+            await peerConnection.addIceCandidate(incommingData.iceCandidate);
+        } catch (e) {
+            console.error('Error adding received ice candidate', e);
+        }
     } else {
         console.log(JSON.parse(message.data));
         conn.innerHTML = JSON.parse(message.data).id;
@@ -39,6 +57,33 @@ ws.onmessage = async(message) => {
 
     }
 }
+
+peerConnection.addEventListener('connectionstatechange', event => {
+    if (peerConnection.connectionState === 'connected') {
+        console.log(peerConnection)
+    }
+});
+
+peerConnection.addEventListener('icecandidate', event => {
+    if (event.candidate) {
+        console.log(event.candidate)
+        ws.send(JSON.stringify({
+            id: personId.value,
+            'new-ice-candidate': event.candidate,
+        }));
+    }
+});
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+
+peerConnection.addEventListener('track', async(event) => {
+    const streams = event.streams;
+    streams.forEach((stream) => {
+        remoteVideo.style.display = 'block';
+        remoteVideo.srcObject = stream;
+    })
+});
+
 
 sendButton.addEventListener('click', (e) => {
     ws.send(JSON.stringify({
@@ -54,8 +99,6 @@ sendBtn.addEventListener('click', (e) => {
     }))
 })
 
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
 
 const camOn = document.getElementById("camOn");
 const camOff = document.getElementById("camOff");
@@ -68,15 +111,7 @@ let conf = {
     audio: true
 }
 
-
-const iceServers = [
-    { urls: 'stun:stun.l.google.com:19302' },
-];
-const configuration = { iceServers };
-
 const createPeer = () => {
-    let peerConnection = new RTCPeerConnection(configuration);
-
     localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
     peerConnection.ontrack = (event) => {
@@ -145,7 +180,3 @@ receiveCall.addEventListener('click', async(e) => {
         console.log(e)
     }
 })
-
-if (peerConnection) {
-    console.log(peerConnection)
-}

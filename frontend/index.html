@@ -5,7 +5,14 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        .frame {
+            display: flex;
+            gap: 2rem;
+        }
+    </style>
     <title>webRTC</title>
+
 </head>
 
 <body>
@@ -34,8 +41,10 @@
         <p id="chat"></p>
 
         <!-- Camera -->
-        <video src="" id="localVideo" class="object-fit-cover" hidden autoplay playsinline></video>
-        <video src="" id="remoteVideo" class="object-fit-cover" hidden autoplay playsinline></video>
+        <div class="frame">
+            <video src="" id="localVideo" width="300" height="300" class="object-fit-cover" hidden autoplay playsinline></video>
+            <video src="" id="remoteVideo" width="300" height="300" class="object-fit-cover" hidden autoplay playsinline></video>
+        </div>
 
 
         <script src="./js/index.js"></script>

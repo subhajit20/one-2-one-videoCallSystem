@@ -75,6 +75,16 @@ wss.on("connection", (ws: WsNode, req) => {
           })
         );
       }
+    } else if (inComingData["new-ice-candidate"]) {
+      const node = getConnectedNodeWs(nodeId, allNodes);
+      if (node?.id) {
+        console.log(inComingData["new-ice-candidate"]);
+        node.send(
+          JSON.stringify({
+            iceCandidate: inComingData["new-ice-candidate"],
+          })
+        );
+      }
     }
   });
 });
